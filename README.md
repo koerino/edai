@@ -1,2 +1,0 @@
-# edai
-Neuroscience 101
