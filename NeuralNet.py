@@ -40,7 +40,7 @@ class Perceptron(object):
             The output of the sigmoid function parametrized by 
             the value.
         """
-        """YOUR CODE"""
+        return 1 / (1 + exp(-value))
       
     def sigmoidActivation(self, inActs):                                       
         """
@@ -54,7 +54,8 @@ class Perceptron(object):
             float
             The value of the sigmoid of the weighted input
         """
-        """YOUR CODE"""
+        weightedSum = self.getWeightedSum([1.0] + inActs)
+        return self.sigmoid(weightedSum)
         
     def sigmoidDeriv(self, value):
         """
@@ -67,7 +68,7 @@ class Perceptron(object):
             The output of the derivative of a sigmoid function
             parametrized by the value.
         """
-        """YOUR CODE"""
+        return exp(-value) / pow(exp(-value) + 1, 2)
         
     def sigmoidActivationDeriv(self, inActs):
         """
@@ -81,7 +82,8 @@ class Perceptron(object):
             int
             The derivative of the sigmoid of the weighted input
         """
-        """YOUR CODE"""
+        weightedSum = self.getWeightedSum([1.0] + inActs)
+        return self.sigmoidDeriv(weightedSum)
     
     def updateWeights(self, inActs, alpha, delta):
         """
@@ -99,7 +101,13 @@ class Perceptron(object):
             Return the total modification of all the weights (sum of each abs(modification))
         """
         totalModification = 0
-        """YOUR CODE"""
+        
+        inActs = [1.0] + inActs
+        for i in xrange(len(self.weights)):
+            mod = alpha * inActs[i] * delta
+            self.weights[i] += mod
+            totalModification += abs(mod)
+            
         return totalModification
             
     def setRandomWeights(self):
@@ -172,7 +180,13 @@ class NeuralNet(object):
             A list of lists. The first list is the input list, and the others are
             lists of the output values of all perceptrons in each layer.
         """
-        """YOUR CODE"""
+        res = [inActs]
+        for layer in self.layers:
+            tempList = []
+            for perceptron in layer:
+                tempList.append(perceptron.sigmoidActivation(res[-1]))
+            res.append(tempList)
+        return res
     
     def backPropLearning(self, examples, alpha):
         """
@@ -201,15 +215,15 @@ class NeuralNet(object):
             #keep track of deltas to use in weight change
             deltas = []
             #Neural net output list
-            allLayerOutput = """FILL IN - neural net output list computation"""
+            allLayerOutput = self.feedForward(example[0])
             lastLayerOutput = allLayerOutput[-1]
             #Empty output layer delta list
             outDelta = []
             #iterate through all output layer neurons
             for outputNum in xrange(len(example[1])):
-                gPrime = self.outputLayer[outputNum].sigmoidActivationDeriv("""FILL IN""")
-                error = """FILL IN - error for this neuron"""
-                delta = """FILL IN - delta for this neuron"""
+                gPrime = self.outputLayer[outputNum].sigmoidActivationDeriv(allLayerOutput[-2])
+                error = example[1][outputNum] - lastLayerOutput[outputNum]
+                delta = gPrime * error
                 averageError+=error*error/2
                 outDelta.append(delta)
             deltas.append(outDelta)
@@ -224,10 +238,8 @@ class NeuralNet(object):
                 hiddenDelta = []
                 #Iterate through all neurons in this layer
                 for neuronNum in xrange(len(layer)):
-                    gPrime = layer[neuronNum].sigmoidActivationDeriv("""FILL IN""")
-                    delta = """FILL IN - delta for this neuron
-                               Carefully look at the equation here,
-                                it is easy to do this by intuition incorrectly"""
+                    gPrime = layer[neuronNum].sigmoidActivationDeriv(allLayerOutput[layerNum])
+                    delta = sum([deltas[0][i] * nextLayer[i].weights[neuronNum + 1] for i in xrange(len(nextLayer))]) * gPrime
                     hiddenDelta.append(delta)
                 deltas = [hiddenDelta]+deltas
             """Get output of all layers"""
@@ -239,7 +251,7 @@ class NeuralNet(object):
             for numLayer in xrange(0,self.numLayers):
                 layer = self.layers[numLayer]
                 for numNeuron in xrange(len(layer)):
-                    weightMod = layer[numNeuron].updateWeights("""FILL IN""")
+                    weightMod = layer[numNeuron].updateWeights(allLayerOutput[numLayer], alpha, deltas[numLayer][numNeuron])
                     averageWeightChange += weightMod
                     numWeights += layer[numNeuron].inSize
             #end for each example
@@ -281,12 +293,14 @@ def buildNeuralNet(examples, alpha=0.1, weightChangeThreshold = 0.00008,hiddenLa
     nnet = NeuralNet(layerList)                                                    
     if startNNet is not None:
         nnet =startNNet
-    """
-    YOUR CODE
-    """
+        
     iteration=0
     trainError=0
-    weightMod=0
+    weightMod=100
+    
+    while iteration != maxItr and weightMod > weightChangeThreshold:
+        trainError, weightMod = nnet.backPropLearning(examplesTrain, alpha)
+        iteration += 1
     
     """
     Iterate for as long as it takes to reach weight modification threshold
@@ -307,12 +321,17 @@ def buildNeuralNet(examples, alpha=0.1, weightChangeThreshold = 0.00008,hiddenLa
     """ 
     
     testError = 0
-    testCorrect = 0     
+    testCorrect = 0
     
-    testAccuracy=0#num correct/num total
+    for exampleInput, exampleOutput in examplesTest:
+        output = nnet.feedForward(exampleInput)
+        if [round(i) for i in output[-1]] == exampleOutput:
+            testCorrect += 1
+        else:
+            testError += 1
+    
+    testAccuracy=testCorrect / float(testCorrect + testError)
     
     print 'Feed Forward Test correctly classified %d, incorrectly classified %d, test percent error  %f\n'%(testCorrect,testError,testAccuracy)
     
-    """return something"""
-
-
+    return nnet, testAccuracy
