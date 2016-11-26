@@ -5,7 +5,7 @@ from Testing import average, stDeviation, testPenData, testCarData
 for i in xrange(9):
     print "Tesing Pen Data ({} perceptrons):".format(i * 5)
     penDataTestAccuracy = []
-    for i in xrange(5):
+    for j in xrange(5):
         iterationResult = testPenData([i * 5])[1]
         penDataTestAccuracy.append(iterationResult)
     
@@ -16,7 +16,7 @@ for i in xrange(9):
 for i in xrange(9):
     print "Tesing Car Data ({} perceptrons):".format(i * 5)
     carDataTestAccuracy = []
-    for i in xrange(5):
+    for j in xrange(5):
         iterationResult = testCarData([i * 5])[1]
         carDataTestAccuracy.append(iterationResult)
     
